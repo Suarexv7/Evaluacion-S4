@@ -1,0 +1,47 @@
+<h2>Crear Evento</h2>
+<form id="createEventForm">
+  <input type="text" id="title" placeholder="Titulo del evento" required />
+  <input type="text" id="location" placeholder="Ubicación" required />
+  <input type="date" id="date" required />
+  <input type="number" id="capacity" placeholder="Capacidad" required />
+  <button type="submit">Guardar</button>
+</form>
+<p><a href="dashboard.html" onclick="event.preventDefault(); navigate('/dashboard')"> Volver</a></p>
+
+ 
+<script type="module">
+  import { getCurrentUser } from '../Auth.js';
+  import { navigate } from '../Router.js';
+
+  const form = document.getElementById('createEventForm');
+  const API_URL = "http://localhost:3000";
+
+  const user = getCurrentUser();
+  if (!user || user.role !== "admin") {
+    navigate("/404");
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newEvent = {
+      title: form.title.value,
+      location: form.location.value,
+      date: form.date.value,
+      capacity: parseInt(form.capacity.value),
+      registered: 0
+    };
+
+    const res = await fetch(`${API_URL}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEvent)
+    });
+
+    if (res.ok) {
+      alert("Evento creado exitosamente");
+      navigate("/dashboard");
+    } else {
+      alert("Error al crear el evento");
+    }
+  });
+</script>

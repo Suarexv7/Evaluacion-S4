@@ -1,0 +1,27 @@
+<h2>Iniciar Sesion</h2>
+<form id="loginForm">
+  <input type="text" id="username" placeholder="Usuario" required />
+  <input type="password" id="password" placeholder="Contraseña" required />
+  <button type="submit">Entrar</button>
+</form>
+<p>No tienes cuenta? <a href="register.html" onclick="event.preventDefault(); navigate('/register')">Registrate</a></p>
+
+<script type="module">
+  import { login } from '../Auth.js';
+  import { navigate } from '../Router.js';
+
+  const form = document.getElementById('loginForm');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = form.username.value;
+    const password = form.password.value;
+
+    try {
+      await login(username, password);
+      alert("Sesión iniciada");
+      navigate('/dashboard');
+    } catch (err) {
+      alert("Usuario o contraseña incorrectos");
+    }
+  });
+</script>

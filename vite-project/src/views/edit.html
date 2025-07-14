@@ -1,0 +1,72 @@
+<h2>Editar Evento</h2>
+<form id="editEventForm">
+  <input type="text" id="title" placeholder="Título del evento" required />
+  <input type="text" id="location" placeholder="Ubicación" required />
+  <input type="date" id="date" required />
+  <input type="number" id="capacity" placeholder="Capacidad" required />
+  <button type="submit">Actualizar evento</button>
+</form>
+<p><a href="dashboard.html" onclick="event.preventDefault(); navigate('/dashboard')">← Volver</a></p>
+
+
+
+<script type="module">
+  import { getCurrentUser } from '../Auth.js';
+  import { navigate } from '../Router.js';
+
+
+  // Verificar si el usuario es admin
+  const user = getCurrentUser();
+  if (!user || user.role !== "admin") {
+    navigate("/not-found");
+  }
+
+
+  // URL de la API
+  const API_URL = "http://localhost:3000";
+  const form = document.getElementById("editEventForm");
+
+  // Obtener ID de la URL
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+  if (!id) {
+    alert("Evento no encontrado");
+    navigate("/dashboard");
+  }
+
+  // Carga de eventos 
+  fetch(`${API_URL}/events/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      form.title.value = data.title;
+      form.location.value = data.location;
+      form.date.value = data.date;
+      form.capacity.value = data.capacity;
+    });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Validación de campos para evitar campos vacíos
+    const updatedEvent = {
+      title: form.title.value,
+      location: form.location.value,
+      date: form.date.value,
+      capacity: parseInt(form.capacity.value),
+    };
+
+    const res = await fetch(`${API_URL}/events/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedEvent)
+    });
+
+    if (res.ok) {
+      alert("Evento actualizado");
+      navigate("/dashboard");
+    } else {
+      alert("Error al actualizar");
+    }
+  });
+</script>

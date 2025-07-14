@@ -1,0 +1,109 @@
+<h1>Bienvenido a la Gestión de Eventos</h1>
+<p id="userInfo"></p>
+<button onclick="logoutUser()">Cerrar sesión</button>
+<br><br>
+<a href="/dashboard/events/create" onclick="event.preventDefault(); navigate('/dashboard/events/create')">Crear Evento</a>
+
+<script type="module">
+  import { getCurrentUser, logout } from '../Auth.js';
+  import { navigate } from '../Router.js';
+
+  const user = getCurrentUser();
+  document.getElementById("userInfo").innerText = `Hola, ${user.username} (${user.role})`;
+
+  window.logoutUser = () => {
+    logout();
+    navigate('/login');
+  };
+</script>
+
+<h1>Bienvenido a la Gestión de Eventos</h1>
+<p id="userInfo"></p>
+<div id="adminActions" style="display:none;">
+  <a href="/dashboard/events/create" onclick="event.preventDefault(); navigate('/dashboard/events/create')">Crear Evento</a>
+</div>
+<div id="visitorEvents" style="display:none;">
+  <h3>Eventos disponibles</h3>
+  <ul id="eventsList"></ul>
+</div>
+<button onclick="logoutUser()">Cerrar sesion</button>
+
+<script type="module">
+  import { getCurrentUser, logout } from '../Auth.js';
+  import { navigate } from '../Router.js';
+
+  const API_URL = "http://localhost:3000";
+  const users = getCurrentUser();
+  const userId = user?.id;
+
+  document.getElementById("userInfo").innerText = `Hola, ${user.username} (${user.role})`;
+
+  if (user.role === "admin") {
+    document.getElementById("adminActions").style.display = "block";
+  } else {
+    document.getElementById("visitorEvents").style.display = "block";
+    loadEvents();
+  }
+
+  // Cargar eventos al iniciar la página para los visitantes y administradores ademas de mostrar los eventos disponibles
+  async function loadEvents() {
+    const res = await fetch(`${API_URL}/events`);
+    const events = await res.json();
+
+    const regRes = await fetch(`${API_URL}/registrations?userId=${userId}`);
+    const registrations = await regRes.json();
+    const registeredIds = registrations.map(r => r.eventId);
+
+    const list = document.getElementById("eventsList");
+    list.innerHTML = "";
+
+    events.forEach(event => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${event.title}</strong> - ${event.date} (${event.registered}/${event.capacity})<br>
+        ${registeredIds.includes(event.id)
+          ? "<em>Ya registrado</em>"
+          : (event.registered < event.capacity
+              ? `<button onclick="registerToEvent(${event.id})">Registrarse</button>`
+              : "<span>Evento lleno</span>")}
+        <hr/>
+      `;
+      list.appendChild(li);
+    });
+  }
+  // Registrar usuario a un evento
+  window.registerToEvent = async function(eventId) {
+    const registration = {
+      userId,
+      eventId
+    };
+
+    // Registrar inscripción
+    await fetch(`${API_URL}/registrations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(registration)
+    });
+
+    // Sumar contador en evento
+    const eventRes = await fetch(`${API_URL}/events/${eventId}`);
+    const eventData = await eventRes.json();
+
+    // Verificar si el evento tiene capacidad disponible
+    await fetch(`${API_URL}/events/${eventId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registered: eventData.registered + 1 })
+    });
+
+    alert("Registro exitoso al evento");
+    loadEvents();
+  };
+
+  window.logoutUser = () => {
+    logout();
+    navigate('/login');
+  };
+
+  
+</script>
